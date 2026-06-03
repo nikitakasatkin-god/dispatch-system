@@ -5,7 +5,6 @@
     <title>Рейсы - Диспетчеризация</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS переменные для тем */
         :root {
             --bg-primary: #f0f2f5;
             --bg-secondary: #ffffff;
@@ -86,7 +85,6 @@
         .arrow { font-size: 12px; transition: transform 0.2s; }
         .has-submenu.open .arrow { transform: rotate(180deg); }
 
-        /* Скрытие элементов по ролям */
         .admin-only { display: none; }
         body[data-role="ADMIN"] .admin-only { display: block; }
 
@@ -264,7 +262,6 @@
             font-weight: 500;
             display: inline-block;
         }
-        .sync-not-set { background: #f3f4f6; color: #6b7280; }
         .sync-pending { background: #fef3c7; color: #d97706; }
         .sync-completed { background: #d1fae5; color: #059669; }
         .link-button {
@@ -283,15 +280,6 @@
         .btn-edit {
             background: #eef2ff;
             color: #4338ca;
-            border: none;
-            padding: 4px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .btn-delete {
-            background: #fee2e2;
-            color: #dc2626;
             border: none;
             padding: 4px 12px;
             border-radius: 6px;
@@ -375,6 +363,14 @@
                         <option value="ALL">Все</option>
                     </select>
                 </div>
+                <div class="filter-field">
+                    <label>Статус синхронизации</label>
+                    <select id="filterSyncStatus">
+                        <option value="ALL">Все</option>
+                        <option value="PENDING">Ожидает отправки</option>
+                        <option value="SYNCED">Синхронизирован</option>
+                    </select>
+                </div>
             </div>
             <div class="filter-actions">
                 <button class="btn-clear" onclick="clearFilters()">Сбросить фильтры</button>
@@ -387,7 +383,6 @@
 </div>
 
 <script>
-    // Функции для темы
     function initTheme() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
@@ -465,6 +460,7 @@
         document.getElementById('filterVehiclePlate').value = '';
         document.getElementById('filterDriverName').value = '';
         document.getElementById('filterStatus').value = 'ALL';
+        document.getElementById('filterSyncStatus').value = 'ALL';
         document.getElementById('searchInput').value = '';
         applyFilters();
     }
@@ -493,6 +489,7 @@
         const filterVehiclePlate = document.getElementById('filterVehiclePlate').value.toLowerCase();
         const filterDriverName = document.getElementById('filterDriverName').value.toLowerCase();
         const filterStatus = document.getElementById('filterStatus').value;
+        const filterSyncStatus = document.getElementById('filterSyncStatus').value;
 
         let filtered = [...allTrips];
 
@@ -523,6 +520,9 @@
         if (filterStatus && filterStatus !== 'ALL') {
             filtered = filtered.filter(t => t.currentStatus?.id === parseInt(filterStatus));
         }
+        if (filterSyncStatus && filterSyncStatus !== 'ALL') {
+            filtered = filtered.filter(t => t.syncStatus === filterSyncStatus);
+        }
 
         filtered.sort((a, b) => a.id - b.id);
         renderTrips(filtered);
@@ -545,24 +545,8 @@
         return status?.name || status?.status || 'Не указан';
     }
 
-    function getSyncText(trip) {
-        if (trip.syncedBack) {
-            return 'Синхронизирован';
-        }
-        if (trip.currentStatus && trip.currentStatus.name !== trip.sourceStatus) {
-            return 'Ожидает отправки';
-        }
-        return 'Синхронизирован';
-    }
-
-    function getSyncClass(trip) {
-        if (trip.syncedBack) {
-            return 'sync-completed';
-        }
-        if (trip.currentStatus && trip.currentStatus.name !== trip.sourceStatus) {
-            return 'sync-pending';
-        }
-        return 'sync-completed';
+    function getSyncStatusText(syncStatus) {
+        return syncStatus === 'PENDING' ? 'Ожидает отправки' : 'Синхронизирован';
     }
 
     function viewTrip(tripId) {
@@ -588,7 +572,7 @@
                         <th>Дата рейса</th>
                         <th>Объем</th>
                         <th>Статус</th>
-                        <th>Статус обмена</th>
+                        <th>Статус синхронизации</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
@@ -596,29 +580,29 @@
                     ${trips.map(trip => {
                         const statusName = getStatusName(trip.currentStatus);
                         const statusColor = getStatusColor(trip.currentStatus);
-                        const syncText = getSyncText(trip);
-                        const syncClass = getSyncClass(trip);
+                        const syncStatusText = getSyncStatusText(trip.syncStatus);
+                        const syncStatusClass = trip.syncStatus === 'PENDING' ? 'sync-pending' : 'sync-completed';
                         return `
                             <tr>
                                 <td><a href="/trip-detail?id=${trip.id}" class="link-button">${trip.id}</a></td>
-                                <td>Заявка №${trip.requestId}</span></span>
-                                <td>${trip.carrierName || '-'}</span></span>
-                                <td>${trip.vehiclePlate || '-'}</span></span>
-                                <td>${trip.driverName || '-'}</span></span>
-                                <td>${formatDate(trip.tripDate)}</span></span>
-                                <td>${trip.volume} т</span></span>
+                                <td>Заявка №${trip.requestId}</td>
+                                <td>${trip.carrierName || '-'}</td>
+                                <td>${trip.vehiclePlate || '-'}</td>
+                                <td>${trip.driverName || '-'}</td>
+                                <td>${formatDate(trip.tripDate)}</td>
+                                <td>${trip.volume} т</td>
                                 <td><span class="status-badge" style="background: ${statusColor}; color: white;">${statusName}</span></td>
-                                <td><span class="sync-badge ${syncClass}">${syncText}</span></td>
+                                <td><span class="sync-badge ${syncStatusClass}">${syncStatusText}</span></td>
                                 <td>
                                     <div class="action-buttons">
                                         <button class="btn-edit" onclick="viewTrip(${trip.id})">Просмотр</button>
                                     </div>
-                                 </span>
+                                </td>
                             </tr>
                         `;
                     }).join('')}
                 </tbody>
-            <tr>
+            </table>
         `;
     }
 
