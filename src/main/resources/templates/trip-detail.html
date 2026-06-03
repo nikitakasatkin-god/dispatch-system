@@ -5,7 +5,6 @@
     <title>Рейс - Диспетчеризация</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS переменные для тем */
         :root {
             --bg-primary: #f0f2f5;
             --bg-secondary: #ffffff;
@@ -139,7 +138,6 @@
             font-weight: 500;
             display: inline-block;
         }
-        .sync-not-set { background: #f3f4f6; color: #6b7280; }
         .sync-pending { background: #fef3c7; color: #d97706; }
         .sync-completed { background: #d1fae5; color: #059669; }
         .action-buttons { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; gap: 12px; flex-wrap: wrap; }
@@ -229,7 +227,6 @@
 </div>
 
 <script>
-    // Функции для темы
     function initTheme() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
@@ -347,13 +344,16 @@
         }
     }
 
+    function getSyncStatusText(syncStatus) {
+        return syncStatus === 'PENDING' ? 'Ожидает отправки' : 'Синхронизирован';
+    }
+
     function renderTripInfo() {
         const container = document.getElementById('tripInfo');
         const currentStatus = tripData.currentStatus;
         const statusColor = currentStatus?.color || '#6b7280';
-
-        const syncText = tripData.syncedBack ? 'Синхронизирован' : 'Ожидает отправки';
-        const syncClass = tripData.syncedBack ? 'sync-completed' : 'sync-pending';
+        const syncStatusText = getSyncStatusText(tripData.syncStatus);
+        const syncStatusClass = tripData.syncStatus === 'PENDING' ? 'sync-pending' : 'sync-completed';
 
         container.innerHTML = `
             <div class="detail-header">
@@ -370,7 +370,7 @@
                 <div class="detail-item"><div class="detail-label">Дата рейса</div><div class="detail-value">${formatDate(tripData.tripDate)}</div></div>
                 <div class="detail-item"><div class="detail-label">Объем</div><div class="detail-value">${tripData.volume} т</div></div>
                 <div class="detail-item"><div class="detail-label">Статус из логистики</div><div class="detail-value">${tripData.sourceStatus || '-'}</div></div>
-                <div class="detail-item"><div class="detail-label">Статус обмена</div><div class="detail-value"><span class="sync-badge ${syncClass}">${syncText}</span></div></div>
+                <div class="detail-item"><div class="detail-label">Статус синхронизации</div><div class="detail-value"><span class="sync-badge ${syncStatusClass}">${syncStatusText}</span></div></div>
                 <div class="detail-item"><div class="detail-label">Дата создания</div><div class="detail-value">${formatDateTime(tripData.createdAt)}</div></div>
             </div>
             <div class="action-buttons">
@@ -421,9 +421,9 @@
                 <tbody>
                     ${history.map(h => `
                         <tr>
-                            <td>${formatDateTime(h.changedAt)}</span></span>
-                            <td><span class="status-badge" style="background: ${h.status?.color || '#6b7280'}; color: white;">${h.status?.name || '-'}</span></span>
-                            <td>${h.userName || h.changedBy || '-'}</span></span>
+                            <td>${formatDateTime(h.changedAt)}</td>
+                            <td><span class="status-badge" style="background: ${h.status?.color || '#6b7280'}; color: white;">${h.status?.name || '-'}</span></td>
+                            <td>${h.userName || h.changedBy || '-'}</td>
                         </tr>
                     `).join('')}
                 </tbody>

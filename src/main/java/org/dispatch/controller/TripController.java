@@ -69,7 +69,6 @@ public class TripController {
         return "profile";
     }
 
-    // API endpoints
     @GetMapping("/api/trips")
     @ResponseBody
     public List<Trip> getTrips() {
@@ -94,6 +93,7 @@ public class TripController {
                     response.put("sourceStatus", trip.getSourceStatus());
                     response.put("currentStatus", trip.getCurrentStatus());
                     response.put("syncedBack", trip.getSyncedBack());
+                    response.put("syncStatus", trip.getSyncStatus());
                     response.put("history", tripHistoryRepository.findByTripOrderByChangedAtAsc(trip));
                     return ResponseEntity.ok(response);
                 })
@@ -120,7 +120,6 @@ public class TripController {
                     }
 
                     trip.setCurrentStatus(newStatus);
-                    trip.setSyncedBack(false);
                     tripRepository.save(trip);
 
                     String username = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -134,6 +133,7 @@ public class TripController {
                     Map<String, Object> response = new HashMap<>();
                     response.put("success", true);
                     response.put("newStatus", newStatus);
+                    response.put("syncStatus", trip.getSyncStatus());
                     return ResponseEntity.ok(response);
                 })
                 .orElse(ResponseEntity.notFound().build());

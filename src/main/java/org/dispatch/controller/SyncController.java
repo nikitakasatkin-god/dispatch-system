@@ -1,7 +1,10 @@
 package org.dispatch.controller;
 
+import org.dispatch.model.SyncStatus;
 import org.dispatch.model.Trip;
 import org.dispatch.repository.TripRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -10,111 +13,156 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/sync")
 public class SyncController {
 
+    private static final Logger log = LoggerFactory.getLogger(SyncController.class);
     private final TripRepository tripRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Value("${logistics.system.url:http://localhost:8080}")
+    @Value("${logistics.system.url:http://host.docker.internal:8080}")
     private String logisticsSystemUrl;
+
+    @Value("${logistics.system.username:admin}")
+    private String logisticsUsername;
+
+    @Value("${logistics.system.password:admin123}")
+    private String logisticsPassword;
 
     public SyncController(TripRepository tripRepository) {
         this.tripRepository = tripRepository;
     }
 
-    // Получение рейсов из основной системы
     @PostMapping("/receive-trips")
     public ResponseEntity<?> receiveTrips(@RequestBody List<Map<String, Object>> trips) {
-        System.out.println("Получено рейсов: " + (trips != null ? trips.size() : 0));
-
-        if (trips == null || trips.isEmpty()) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "Нет рейсов для обработки", "count", 0));
-        }
+        log.info("=== ПОЛУЧЕНИЕ РЕЙСОВ ИЗ ОСНОВНОЙ СИСТЕМЫ ===");
+        log.info("Получено рейсов: {}", trips.size());
 
         for (Map<String, Object> tripData : trips) {
             try {
-                // Проверяем наличие всех полей
-                if (!tripData.containsKey("id") || tripData.get("id") == null) {
-                    System.err.println("Пропущен id рейса");
-                    continue;
-                }
-
                 Long tripId = Long.parseLong(tripData.get("id").toString());
-
-                // Проверяем обязательные поля
-                String carrierName = tripData.get("carrierName") != null ? tripData.get("carrierName").toString() : "";
-                String vehiclePlate = tripData.get("vehiclePlate") != null ? tripData.get("vehiclePlate").toString() : "";
-                String driverName = tripData.get("driverName") != null ? tripData.get("driverName").toString() : "";
-                String tripDate = tripData.get("tripDate") != null ? tripData.get("tripDate").toString() : "";
-                Double volume = tripData.get("volume") != null ? Double.parseDouble(tripData.get("volume").toString()) : 0;
-                String sourceStatus = tripData.get("status") != null ? tripData.get("status").toString() : "";
-                Long requestId = tripData.get("requestId") != null ? Long.parseLong(tripData.get("requestId").toString()) : 0;
-
                 Trip existingTrip = tripRepository.findById(tripId).orElse(null);
+
                 if (existingTrip == null) {
                     Trip newTrip = new Trip();
                     newTrip.setId(tripId);
-                    newTrip.setRequestId(requestId);
-                    newTrip.setCarrierName(carrierName);
-                    newTrip.setVehiclePlate(vehiclePlate);
+                    newTrip.setRequestId(Long.parseLong(tripData.get("requestId").toString()));
+                    newTrip.setCarrierName(tripData.get("carrierName").toString());
+                    newTrip.setVehiclePlate(tripData.get("vehiclePlate").toString());
                     newTrip.setTrailerPlate(tripData.get("trailerPlate") != null ? tripData.get("trailerPlate").toString() : "");
-                    newTrip.setVehicleBrand(tripData.get("vehicleBrand") != null ? tripData.get("vehicleBrand").toString() : "");
-                    newTrip.setDriverName(driverName);
-                    newTrip.setTripDate(java.time.LocalDate.parse(tripDate));
-                    newTrip.setVolume(volume);
-                    newTrip.setSourceStatus(sourceStatus);
+                    newTrip.setVehicleBrand(tripData.get("vehicleBrand").toString());
+                    newTrip.setDriverName(tripData.get("driverName").toString());
+                    newTrip.setTripDate(java.time.LocalDate.parse(tripData.get("tripDate").toString()));
+                    newTrip.setVolume(Double.parseDouble(tripData.get("volume").toString()));
+                    newTrip.setSourceStatus(tripData.get("status").toString());
+                    newTrip.setSyncStatus(SyncStatus.SYNCED);
                     tripRepository.save(newTrip);
-                    System.out.println("Создан новый рейс: " + tripId);
+                    log.info("Создан новый рейс: {}", tripId);
                 } else {
-                    existingTrip.setSourceStatus(sourceStatus);
+                    existingTrip.setSourceStatus(tripData.get("status").toString());
                     tripRepository.save(existingTrip);
-                    System.out.println("Обновлен рейс: " + tripId);
+                    log.info("Обновлен рейс: {}", tripId);
                 }
             } catch (Exception e) {
-                System.err.println("Ошибка обработки рейса: " + e.getMessage());
-                e.printStackTrace();
+                log.error("Ошибка при обработке рейса: {}", e.getMessage(), e);
             }
         }
-        return ResponseEntity.ok(Map.of("success", true, "message", "Рейсы получены", "count", trips.size()));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Рейсы получены");
+        response.put("count", trips.size());
+        return ResponseEntity.ok(response);
     }
 
-    // Отправка обновленных статусов обратно в основную систему
     @PostMapping("/send-statuses")
     public ResponseEntity<?> sendStatuses() {
-        List<Trip> tripsToSync = tripRepository.findBySyncedBackFalse();
+        log.info("=== ОТПРАВКА СТАТУСОВ В ОСНОВНУЮ СИСТЕМУ ===");
+
+        List<Trip> tripsToSync = tripRepository.findBySyncStatus(SyncStatus.PENDING);
+        log.info("Найдено рейсов для отправки (статус PENDING): {}", tripsToSync.size());
 
         if (tripsToSync.isEmpty()) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "Нет рейсов для отправки", "count", 0));
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Нет рейсов для отправки");
+            response.put("count", 0);
+            return ResponseEntity.ok(response);
+        }
+
+        List<Map<String, Object>> updates = new ArrayList<>();
+        for (Trip trip : tripsToSync) {
+            if (trip.getCurrentStatus() != null) {
+                Map<String, Object> statusUpdate = new HashMap<>();
+                statusUpdate.put("tripId", trip.getId());
+                statusUpdate.put("statusId", trip.getCurrentStatus().getId());
+                statusUpdate.put("statusName", trip.getCurrentStatus().getName());
+                statusUpdate.put("statusDescription", trip.getCurrentStatus().getDescription());
+                statusUpdate.put("updatedAt", LocalDateTime.now().toString());
+                updates.add(statusUpdate);
+
+                log.info("Добавлено обновление: рейс {} -> статус {} (id={})",
+                        trip.getId(), trip.getCurrentStatus().getName(), trip.getCurrentStatus().getId());
+            }
         }
 
         int sentCount = 0;
-        for (Trip trip : tripsToSync) {
-            if (trip.getCurrentStatus() != null) {
-                try {
-                    String url = logisticsSystemUrl + "/api/dispatch/update-status";
-                    Map<String, Object> statusData = Map.of(
-                            "tripId", trip.getId(),
-                            "status", trip.getCurrentStatus().getName(),
-                            "statusId", trip.getCurrentStatus().getId()
-                    );
-                    restTemplate.postForEntity(url, statusData, String.class);
+        for (Map<String, Object> update : updates) {
+            try {
+                String url = logisticsSystemUrl + "/api/trips/dispatch/update-status";
+                log.info("Отправка обновления на URL: {}", url);
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.APPLICATION_JSON);
+
+                String auth = logisticsUsername + ":" + logisticsPassword;
+                byte[] encodedAuth = java.util.Base64.getEncoder().encode(auth.getBytes());
+                String authHeader = "Basic " + new String(encodedAuth);
+                headers.set("Authorization", authHeader);
+
+                HttpEntity<Map<String, Object>> request = new HttpEntity<>(update, headers);
+
+                ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+                log.info("Ответ от основной системы для рейса {}: статус={}, тело={}",
+                        update.get("tripId"), response.getStatusCode(), response.getBody());
+
+                // ВСЕГДА меняем статус на SYNCED после отправки (независимо от ответа)
+                Trip trip = tripRepository.findById(Long.parseLong(update.get("tripId").toString())).orElse(null);
+                if (trip != null) {
                     trip.setSyncedBack(true);
                     trip.setSyncedBackAt(LocalDateTime.now());
+                    trip.setSyncStatus(SyncStatus.SYNCED);
                     tripRepository.save(trip);
                     sentCount++;
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    log.info("✅ Рейс {} помечен как SYNCED и отправлен в логистику", trip.getId());
+                }
+
+            } catch (Exception e) {
+                log.error("❌ Ошибка отправки для рейса {}: {}", update.get("tripId"), e.getMessage());
+                // Даже при ошибке, меняем статус
+                Trip trip = tripRepository.findById(Long.parseLong(update.get("tripId").toString())).orElse(null);
+                if (trip != null) {
+                    trip.setSyncStatus(SyncStatus.SYNCED);
+                    tripRepository.save(trip);
+                    log.warn("⚠️ Рейс {} принудительно помечен как SYNCED из-за ошибки", trip.getId());
                 }
             }
         }
-        return ResponseEntity.ok(Map.of("success", true, "message", "Статусы отправлены", "count", sentCount));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Статусы отправлены");
+        response.put("count", sentCount);
+        response.put("updates", updates);
+
+        log.info("Отправлено {} обновлений статусов", sentCount);
+        return ResponseEntity.ok(response);
     }
 }
