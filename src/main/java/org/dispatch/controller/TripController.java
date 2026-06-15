@@ -8,15 +8,14 @@ import org.dispatch.repository.TripHistoryRepository;
 import org.dispatch.repository.TripRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Controller
+@RestController
+@RequestMapping("/api/trips")
 public class TripController {
 
     private final TripRepository tripRepository;
@@ -31,52 +30,12 @@ public class TripController {
         this.dispatchStatusRepository = dispatchStatusRepository;
     }
 
-    @GetMapping("/")
-    public String root() {
-        return "redirect:/dashboard";
-    }
-
-    @GetMapping("/dashboard")
-    public String dashboard() {
-        return "dashboard";
-    }
-
-    @GetMapping("/trips")
-    public String trips(Model model) {
-        model.addAttribute("trips", tripRepository.findAll());
-        return "trips";
-    }
-
-    @GetMapping("/trip-detail")
-    public String tripDetail(@RequestParam Long id, Model model) {
-        model.addAttribute("tripId", id);
-        return "trip-detail";
-    }
-
-    @GetMapping("/references")
-    public String references(Model model) {
-        model.addAttribute("statuses", dispatchStatusRepository.findByActiveTrueOrderBySortOrderAsc());
-        return "references";
-    }
-
-    @GetMapping("/settings")
-    public String settings() {
-        return "settings";
-    }
-
-    @GetMapping("/profile")
-    public String profile() {
-        return "profile";
-    }
-
-    @GetMapping("/api/trips")
-    @ResponseBody
+    @GetMapping
     public List<Trip> getTrips() {
         return tripRepository.findAll();
     }
 
-    @GetMapping("/api/trips/{id}")
-    @ResponseBody
+    @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> getTrip(@PathVariable Long id) {
         return tripRepository.findById(id)
                 .map(trip -> {
@@ -100,16 +59,14 @@ public class TripController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/api/trips/{id}/history")
-    @ResponseBody
+    @GetMapping("/{id}/history")
     public ResponseEntity<List<TripHistory>> getTripHistory(@PathVariable Long id) {
         return tripRepository.findById(id)
                 .map(trip -> ResponseEntity.ok(tripHistoryRepository.findByTripOrderByChangedAtAsc(trip)))
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/api/trips/{id}/status")
-    @ResponseBody
+    @PostMapping("/{id}/status")
     public ResponseEntity<?> updateTripStatus(@PathVariable Long id, @RequestBody Map<String, Object> data) {
         return tripRepository.findById(id)
                 .map(trip -> {
