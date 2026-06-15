@@ -144,7 +144,7 @@
             gap: 16px;
         }
         .filter-group { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .filter-select, .search-input {
+        .search-input {
             padding: 8px 16px;
             border: 1px solid var(--border-color);
             border-radius: 10px;
@@ -272,11 +272,6 @@
             border: none;
             cursor: pointer;
         }
-        .action-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
         .btn-edit {
             background: #eef2ff;
             color: #4338ca;
@@ -307,7 +302,18 @@
     <div class="sidebar-menu">
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
-        <div class="menu-item admin-only" onclick="window.location.href='/references'"><div class="menu-title">Справочники</div></div>
+
+        <div class="menu-item has-submenu" id="referencesMenu">
+            <div class="menu-title" onclick="toggleSubmenu(this)">
+                Справочники
+                <span class="arrow">▼</span>
+            </div>
+            <div class="submenu">
+                <div class="submenu-item admin-only" data-tab="users" onclick="window.location.href='/references?tab=users'">Пользователи</div>
+                <div class="submenu-item" data-tab="statuses" onclick="window.location.href='/references?tab=statuses'">Статусы рейсов</div>
+            </div>
+        </div>
+
         <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
         <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
     </div>
@@ -402,6 +408,14 @@
             localStorage.setItem('theme', 'light');
             if (themeBtn) themeBtn.innerHTML = '<span>🌙</span> Тема';
         }
+    }
+
+    function toggleSubmenu(element) {
+        const menuItem = element.closest('.has-submenu');
+        menuItem.classList.toggle('open');
+        const submenu = menuItem.querySelector('.submenu');
+        if (submenu) submenu.classList.toggle('show');
+        if (event) event.stopPropagation();
     }
 
     document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
@@ -590,14 +604,14 @@
                                 <td>${trip.vehiclePlate || '-'}</td>
                                 <td>${trip.driverName || '-'}</td>
                                 <td>${formatDate(trip.tripDate)}</td>
-                                <td>${trip.volume} т</td>
+                                <td>${trip.volume} т</span></span>
                                 <td><span class="status-badge" style="background: ${statusColor}; color: white;">${statusName}</span></td>
                                 <td><span class="sync-badge ${syncStatusClass}">${syncStatusText}</span></td>
                                 <td>
                                     <div class="action-buttons">
                                         <button class="btn-edit" onclick="viewTrip(${trip.id})">Просмотр</button>
                                     </div>
-                                </td>
+                                 </span>
                             </tr>
                         `;
                     }).join('')}

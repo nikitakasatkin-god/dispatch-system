@@ -5,7 +5,6 @@
     <title>Профиль - Диспетчеризация</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS переменные для тем */
         :root {
             --bg-primary: #f0f2f5;
             --bg-secondary: #ffffff;
@@ -171,9 +170,20 @@
     <div class="sidebar-menu">
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
-        <div class="menu-item admin-only" onclick="window.location.href='/references'"><div class="menu-title">Справочники</div></div>
+
+        <div class="menu-item has-submenu" id="referencesMenu">
+            <div class="menu-title" onclick="toggleSubmenu(this)">
+                Справочники
+                <span class="arrow">▼</span>
+            </div>
+            <div class="submenu">
+                <div class="submenu-item admin-only" data-tab="users" onclick="window.location.href='/references?tab=users'">Пользователи</div>
+                <div class="submenu-item" data-tab="statuses" onclick="window.location.href='/references?tab=statuses'">Статусы рейсов</div>
+            </div>
+        </div>
+
         <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
-        <div class="menu-item" style="background: rgba(255,255,255,0.1);" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
+        <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
     </div>
 </div>
 
@@ -210,7 +220,6 @@
 </div>
 
 <script>
-    // Функции для темы
     function initTheme() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
@@ -230,6 +239,14 @@
             localStorage.setItem('theme', 'light');
             if (themeBtn) themeBtn.innerHTML = '<span>🌙</span> Тема';
         }
+    }
+
+    function toggleSubmenu(element) {
+        const menuItem = element.closest('.has-submenu');
+        menuItem.classList.toggle('open');
+        const submenu = menuItem.querySelector('.submenu');
+        if (submenu) submenu.classList.toggle('show');
+        if (event) event.stopPropagation();
     }
 
     document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);

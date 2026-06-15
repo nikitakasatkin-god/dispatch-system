@@ -32,7 +32,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/login", "/error").permitAll()
-                        // Доступ к API пользователей только для ADMIN
+                        // Просмотр справочника статусов доступен всем авторизованным пользователям
+                        .requestMatchers("/references", "/api/statuses").authenticated()
+                        // Редактирование статусов (POST, PUT, DELETE) только для ADMIN
+                        .requestMatchers("/api/statuses/**").hasRole("ADMIN")
+                        // API пользователей только для ADMIN
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
