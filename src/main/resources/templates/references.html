@@ -70,6 +70,10 @@
         .submenu-item:hover { background: rgba(255,255,255,0.1); color: white; }
         .arrow { font-size: 12px; transition: transform 0.2s; }
         .has-submenu.open .arrow { transform: rotate(180deg); }
+        .admin-only { display: none !important; }
+        body[data-role="ADMIN"] .admin-only { display: block !important; }
+        body[data-role="ADMIN"] .admin-only-flex { display: flex !important; }
+        body[data-role="DISPATCHER"] .admin-only { display: none !important; }
 
         .main-content { margin-left: 260px; padding: 24px; }
         .top-bar {
@@ -339,18 +343,20 @@
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
 
-        <div class="menu-item has-submenu">
+        <!-- Справочники с выпадающим списком -->
+        <div class="menu-item has-submenu" id="referencesMenu">
             <div class="menu-title" onclick="toggleSubmenu(this)">
                 Справочники
                 <span class="arrow">▼</span>
             </div>
-            <div class="submenu" id="referencesSubmenu">
-                <div class="submenu-item" data-tab="users">Пользователи</div>
+            <div class="submenu">
+                <div class="submenu-item admin-only" data-tab="users">Пользователи</div>
                 <div class="submenu-item" data-tab="statuses">Статусы рейсов</div>
             </div>
         </div>
 
-        <div class="menu-item" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
+        <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
+
         <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
     </div>
 </div>
