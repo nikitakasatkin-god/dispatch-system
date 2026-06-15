@@ -101,7 +101,18 @@
     <div class="sidebar-menu">
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
-        <div class="menu-item admin-only" onclick="window.location.href='/references'"><div class="menu-title">Справочники</div></div>
+
+        <div class="menu-item has-submenu" id="referencesMenu">
+            <div class="menu-title" onclick="toggleSubmenu(this)">
+                Справочники
+                <span class="arrow">▼</span>
+            </div>
+            <div class="submenu">
+                <div class="submenu-item admin-only" data-tab="users" onclick="window.location.href='/references?tab=users'">Пользователи</div>
+                <div class="submenu-item" data-tab="statuses" onclick="window.location.href='/references?tab=statuses'">Статусы рейсов</div>
+            </div>
+        </div>
+
         <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
         <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
     </div>
@@ -133,6 +144,14 @@
 
 <script>
     let currentUser = null;
+
+    function toggleSubmenu(element) {
+        const menuItem = element.closest('.has-submenu');
+        menuItem.classList.toggle('open');
+        const submenu = menuItem.querySelector('.submenu');
+        if (submenu) submenu.classList.toggle('show');
+        if (event) event.stopPropagation();
+    }
 
     async function fetchCurrentUser() {
         try {
@@ -167,7 +186,7 @@
                     </tr>
                 `).join('');
             } else {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Нет рейсов</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Нет рейсов</span></span>';
             }
         } catch(e) { console.error(e); }
     }

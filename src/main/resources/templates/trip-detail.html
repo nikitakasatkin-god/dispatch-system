@@ -197,7 +197,18 @@
     <div class="sidebar-menu">
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
-        <div class="menu-item admin-only" onclick="window.location.href='/references'"><div class="menu-title">Справочники</div></div>
+
+        <div class="menu-item has-submenu" id="referencesMenu">
+            <div class="menu-title" onclick="toggleSubmenu(this)">
+                Справочники
+                <span class="arrow">▼</span>
+            </div>
+            <div class="submenu">
+                <div class="submenu-item admin-only" data-tab="users" onclick="window.location.href='/references?tab=users'">Пользователи</div>
+                <div class="submenu-item" data-tab="statuses" onclick="window.location.href='/references?tab=statuses'">Статусы рейсов</div>
+            </div>
+        </div>
+
         <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
         <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
     </div>
@@ -246,6 +257,14 @@
             localStorage.setItem('theme', 'light');
             if (themeBtn) themeBtn.innerHTML = '<span>🌙</span> Тема';
         }
+    }
+
+    function toggleSubmenu(element) {
+        const menuItem = element.closest('.has-submenu');
+        menuItem.classList.toggle('open');
+        const submenu = menuItem.querySelector('.submenu');
+        if (submenu) submenu.classList.toggle('show');
+        if (event) event.stopPropagation();
     }
 
     document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
@@ -421,9 +440,9 @@
                 <tbody>
                     ${history.map(h => `
                         <tr>
-                            <td>${formatDateTime(h.changedAt)}</td>
-                            <td><span class="status-badge" style="background: ${h.status?.color || '#6b7280'}; color: white;">${h.status?.name || '-'}</span></td>
-                            <td>${h.userName || h.changedBy || '-'}</td>
+                            <td>${formatDateTime(h.changedAt)}</span></span>
+                            <td><span class="status-badge" style="background: ${h.status?.color || '#6b7280'}; color: white;">${h.status?.name || '-'}</span></span>
+                            <td>${h.userName || h.changedBy || '-'}</span></span>
                         </tr>
                     `).join('')}
                 </tbody>

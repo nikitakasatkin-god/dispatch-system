@@ -19,6 +19,7 @@
             --input-bg: #ffffff;
             --hover-bg: #f9fafb;
             --primary-color: #2a5298;
+            --primary-hover: #1e3c72;
         }
 
         body.dark-theme {
@@ -35,6 +36,7 @@
             --input-bg: #1e2a4a;
             --hover-bg: #1a2744;
             --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -68,9 +70,6 @@
         .submenu-item:hover { background: rgba(255,255,255,0.1); color: white; }
         .arrow { font-size: 12px; transition: transform 0.2s; }
         .has-submenu.open .arrow { transform: rotate(180deg); }
-
-        .admin-only { display: none; }
-        body[data-role="ADMIN"] .admin-only { display: block; }
 
         .main-content { margin-left: 260px; padding: 24px; }
         .top-bar {
@@ -137,6 +136,93 @@
             transition: background 0.3s ease;
         }
         .tab-content.active { display: block; }
+
+        .filter-panel {
+            display: none;
+            background: var(--hover-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .filter-panel.show {
+            display: block;
+        }
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .filter-field input, .filter-field select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+        .filter-field input:focus, .filter-field select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .btn-filter {
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .btn-filter:hover { background: var(--bg-primary); }
+        .btn-filter.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .btn-clear {
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .btn-apply {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
@@ -155,10 +241,11 @@
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
             margin-bottom: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         .btn-primary:hover {
             transform: translateY(-1px);
@@ -172,6 +259,10 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background: var(--bg-primary);
         }
         .btn-danger {
             background: #fee2e2;
@@ -181,6 +272,10 @@
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
+            transition: all 0.2s;
+        }
+        .btn-danger:hover {
+            background: #fecaca;
         }
         .modal {
             display: none;
@@ -211,6 +306,10 @@
             background: var(--input-bg);
             color: var(--text-primary);
         }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -228,6 +327,8 @@
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .main-content { margin-left: 0; }
+            .filter-row { grid-template-columns: 1fr; }
+            .tabs { flex-direction: column; }
         }
     </style>
 </head>
@@ -237,8 +338,19 @@
     <div class="sidebar-menu">
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
-        <div class="menu-item admin-only" onclick="window.location.href='/references'"><div class="menu-title">Справочники</div></div>
-        <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
+
+        <div class="menu-item has-submenu">
+            <div class="menu-title" onclick="toggleSubmenu(this)">
+                Справочники
+                <span class="arrow">▼</span>
+            </div>
+            <div class="submenu" id="referencesSubmenu">
+                <div class="submenu-item" data-tab="users">Пользователи</div>
+                <div class="submenu-item" data-tab="statuses">Статусы рейсов</div>
+            </div>
+        </div>
+
+        <div class="menu-item" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
         <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
     </div>
 </div>
@@ -253,50 +365,110 @@
         </div>
     </div>
 
-    <div class="tabs">
-        <div class="tab" data-tab="users">Пользователи</div>
-        <div class="tab" data-tab="statuses">Статусы рейсов</div>
-    </div>
-
-    <!-- Пользователи -->
-    <div id="users" class="tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <button class="btn-primary" id="addUserBtn" onclick="openUserModal()">+ Добавить пользователя</button>
+    <div class="content-panel">
+        <div class="tabs" id="tabsContainer">
+            <div class="tab" data-tab="users" id="usersTab">Пользователи</div>
+            <div class="tab" data-tab="statuses" id="statusesTab">Статусы рейсов</div>
         </div>
-        <table class="data-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Логин</th>
-                <th>ФИО</th>
-                <th>Роль</th>
-                <th>Статус</th>
-                <th>Действия</th>
-            </tr>
-            </thead>
-            <tbody id="users-tbody">
-            </tbody>
-        </table>
-    </div>
 
-    <!-- Статусы рейсов -->
-    <div id="statuses" class="tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <button class="btn-primary" id="addStatusBtn" onclick="openStatusModal()">+ Добавить статус</button>
+        <!-- Пользователи -->
+        <div id="users" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <button class="btn-filter" id="filterUsersBtn"><span>🔍</span> Фильтр</button>
+                <button class="btn-primary" id="addUserBtn" onclick="openUserModal()">+ Добавить пользователя</button>
+            </div>
+
+            <div id="filterUsersPanel" class="filter-panel">
+                <div class="filter-row">
+                    <div class="filter-field">
+                        <label>Логин</label>
+                        <input type="text" id="filterUserUsername" placeholder="Логин">
+                    </div>
+                    <div class="filter-field">
+                        <label>ФИО</label>
+                        <input type="text" id="filterUserFullName" placeholder="ФИО">
+                    </div>
+                    <div class="filter-field">
+                        <label>Роль</label>
+                        <select id="filterUserRole">
+                            <option value="">Все</option>
+                            <option value="ADMIN">Администратор</option>
+                            <option value="DISPATCHER">Диспетчер</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label>Статус</label>
+                        <select id="filterUserActive">
+                            <option value="">Все</option>
+                            <option value="true">Активен</option>
+                            <option value="false">Неактивен</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearUserFilters()">Сбросить</button>
+                    <button class="btn-apply" onclick="applyUserFilters()">Применить</button>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>ФИО</th>
+                    <th>Роль</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody id="users-tbody">
+                </tbody>
+            </table>
         </div>
-        <table class="data-table">
-            <thead>
-            <tr>
-                <th>ID</th>
-                <th>Название</th>
-                <th>Описание</th>
-                <th>Цвет</th>
-                <th>Порядок</th>
-                <th>Действия</th>
-            </tr>
-            </thead>
-            <tbody id="statuses-tbody"></tbody>
-        </table>
+
+        <!-- Статусы рейсов -->
+        <div id="statuses" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <button class="btn-filter" id="filterStatusesBtn"><span>🔍</span> Фильтр</button>
+                <button class="btn-primary" id="addStatusBtn" onclick="openStatusModal()">+ Добавить статус</button>
+            </div>
+
+            <div id="filterStatusesPanel" class="filter-panel">
+                <div class="filter-row">
+                    <div class="filter-field">
+                        <label>Название</label>
+                        <input type="text" id="filterStatusName" placeholder="Название статуса">
+                    </div>
+                    <div class="filter-field">
+                        <label>Описание</label>
+                        <input type="text" id="filterStatusDescription" placeholder="Описание">
+                    </div>
+                    <div class="filter-field">
+                        <label>Цвет</label>
+                        <input type="text" id="filterStatusColor" placeholder="Цвет (HEX)">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearStatusFilters()">Сбросить</button>
+                    <button class="btn-apply" onclick="applyStatusFilters()">Применить</button>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Описание</th>
+                    <th>Цвет</th>
+                    <th>Порядок</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody id="statuses-tbody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -408,6 +580,47 @@
     let editingUserId = null;
     let editingStatusId = null;
 
+    let filterPanels = {};
+
+    function initFilterPanel(btnId, panelId) {
+        const btn = document.getElementById(btnId);
+        const panel = document.getElementById(panelId);
+        if (btn && panel) {
+            let isVisible = false;
+            btn.addEventListener('click', () => {
+                isVisible = !isVisible;
+                if (isVisible) { panel.classList.add('show'); btn.classList.add('active'); }
+                else { panel.classList.remove('show'); btn.classList.remove('active'); }
+            });
+            filterPanels[panelId] = panel;
+        }
+    }
+
+    function saveActiveTab(tabId) {
+        localStorage.setItem('dispatch_active_tab', tabId);
+    }
+
+    function getTabFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab && (tab === 'users' || tab === 'statuses')) {
+            return tab;
+        }
+        return null;
+    }
+
+    function loadActiveTab() {
+        const urlTab = getTabFromUrl();
+        if (urlTab) {
+            return urlTab;
+        }
+        const savedTab = localStorage.getItem('dispatch_active_tab');
+        if (savedTab && (savedTab === 'users' || savedTab === 'statuses')) {
+            return savedTab;
+        }
+        return 'statuses';
+    }
+
     async function fetchCurrentUser() {
         try {
             const response = await fetch('/api/auth/current-user');
@@ -416,19 +629,57 @@
                 currentUserRole = user.role;
                 document.getElementById('currentUsername').innerText = user.username || user.fullName || 'User';
                 document.body.setAttribute('data-role', currentUserRole);
+
+                // ========== СКРЫВАЕМ ВКЛАДКУ ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ДИСПЕТЧЕРА ==========
+                const usersTab = document.getElementById('usersTab');
+                const usersSubmenuItem = document.querySelector('.submenu-item[data-tab="users"]');
+                const addUserBtn = document.getElementById('addUserBtn');
+                const addStatusBtn = document.getElementById('addStatusBtn');
+
+                if (currentUserRole === 'DISPATCHER') {
+                    if (usersTab) usersTab.style.display = 'none';
+                    if (usersSubmenuItem) usersSubmenuItem.style.display = 'none';
+                    if (addUserBtn) addUserBtn.style.display = 'none';
+                    if (addStatusBtn) addStatusBtn.style.display = 'none';
+                } else {
+                    if (usersTab) usersTab.style.display = '';
+                    if (usersSubmenuItem) usersSubmenuItem.style.display = '';
+                    if (addUserBtn) addUserBtn.style.display = '';
+                    if (addStatusBtn) addStatusBtn.style.display = '';
+                }
+                // ===================================================================
+
+                const activeTab = loadActiveTab();
+                switchToTab(activeTab);
             }
         } catch(e) {
             document.getElementById('currentUsername').innerText = 'User';
+            switchToTab('statuses');
         }
     }
 
     function switchToTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
+        const targetTab = document.getElementById(tabId);
+        if (targetTab) targetTab.classList.add('active');
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.remove('active');
             if (tab.getAttribute('data-tab') === tabId) tab.classList.add('active');
         });
+
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-tab') === tabId) {
+                item.classList.add('active');
+            }
+        });
+
+        saveActiveTab(tabId);
+
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabId);
+        window.history.replaceState({}, '', url);
+
         if (tabId === 'users') loadUsers();
         if (tabId === 'statuses') loadStatuses();
     }
@@ -459,7 +710,32 @@
             return;
         }
 
-        tbody.innerHTML = allUsers.map(user => `
+        const filterUsername = document.getElementById('filterUserUsername')?.value.toLowerCase() || '';
+        const filterFullName = document.getElementById('filterUserFullName')?.value.toLowerCase() || '';
+        const filterRole = document.getElementById('filterUserRole')?.value || '';
+        const filterActive = document.getElementById('filterUserActive')?.value || '';
+
+        let filtered = [...allUsers];
+
+        if (filterUsername) {
+            filtered = filtered.filter(u => (u.username || '').toLowerCase().includes(filterUsername));
+        }
+        if (filterFullName) {
+            filtered = filtered.filter(u => (u.fullName || '').toLowerCase().includes(filterFullName));
+        }
+        if (filterRole && filterRole !== '') {
+            filtered = filtered.filter(u => u.role === filterRole);
+        }
+        if (filterActive && filterActive !== '') {
+            filtered = filtered.filter(u => u.active == (filterActive === 'true'));
+        }
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Нет пользователей по фильтру</span></span>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(user => `
             <tr>
                 <td>${user.id}</span></span>
                 <td>${escapeHtml(user.username)}</span></span>
@@ -472,6 +748,18 @@
                  </span>
             </tr>
         `).join('');
+    }
+
+    function clearUserFilters() {
+        document.getElementById('filterUserUsername').value = '';
+        document.getElementById('filterUserFullName').value = '';
+        document.getElementById('filterUserRole').value = '';
+        document.getElementById('filterUserActive').value = '';
+        renderUsers();
+    }
+
+    function applyUserFilters() {
+        renderUsers();
     }
 
     function openUserModal() {
@@ -603,7 +891,30 @@
             return;
         }
 
-        tbody.innerHTML = allStatuses.map(s => `
+        const filterName = document.getElementById('filterStatusName')?.value.toLowerCase() || '';
+        const filterDescription = document.getElementById('filterStatusDescription')?.value.toLowerCase() || '';
+        const filterColor = document.getElementById('filterStatusColor')?.value.toLowerCase() || '';
+
+        let filtered = [...allStatuses];
+
+        if (filterName) {
+            filtered = filtered.filter(s => (s.name || '').toLowerCase().includes(filterName));
+        }
+        if (filterDescription) {
+            filtered = filtered.filter(s => (s.description || '').toLowerCase().includes(filterDescription));
+        }
+        if (filterColor) {
+            filtered = filtered.filter(s => (s.color || '').toLowerCase().includes(filterColor));
+        }
+
+        const isAdmin = currentUserRole === 'ADMIN';
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Нет статусов по фильтру</span></span>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(s => `
             <tr>
                 <td>${s.id}</span></span>
                 <td><strong>${escapeHtml(s.name)}</strong></span></span>
@@ -611,14 +922,31 @@
                 <td><div style="width:20px;height:20px;background:${s.color};border-radius:4px;"></div></span>
                 <td>${s.sortOrder || 0}</span></span>
                 <td>
-                    <button class="btn-secondary" onclick="editStatus(${s.id})">✏️</button>
-                    <button class="btn-danger" onclick="deleteStatus(${s.id})">🗑️</button>
+                    ${isAdmin ? `
+                        <button class="btn-secondary" onclick="editStatus(${s.id})">✏️</button>
+                        <button class="btn-danger" onclick="deleteStatus(${s.id})">🗑️</button>
+                    ` : ''}
                  </span>
             </tr>
         `).join('');
     }
 
+    function clearStatusFilters() {
+        document.getElementById('filterStatusName').value = '';
+        document.getElementById('filterStatusDescription').value = '';
+        document.getElementById('filterStatusColor').value = '';
+        renderStatuses();
+    }
+
+    function applyStatusFilters() {
+        renderStatuses();
+    }
+
     function openStatusModal() {
+        if (currentUserRole !== 'ADMIN') {
+            showNotification('Доступ запрещен', 'error');
+            return;
+        }
         editingStatusId = null;
         document.getElementById('statusModalTitle').innerText = 'Добавление статуса';
         document.getElementById('statusId').value = '';
@@ -630,6 +958,10 @@
     }
 
     function editStatus(id) {
+        if (currentUserRole !== 'ADMIN') {
+            showNotification('Доступ запрещен', 'error');
+            return;
+        }
         const status = allStatuses.find(s => s.id === id);
         if (status) {
             editingStatusId = status.id;
@@ -649,6 +981,7 @@
     }
 
     async function saveStatus() {
+        if (currentUserRole !== 'ADMIN') return;
         const name = document.getElementById('statusName').value.trim();
         const description = document.getElementById('statusDescription').value;
         const color = document.getElementById('statusColor').value;
@@ -690,6 +1023,7 @@
     }
 
     async function deleteStatus(id) {
+        if (currentUserRole !== 'ADMIN') return;
         if (confirm('Удалить статус?')) {
             try {
                 const response = await fetch(`/api/statuses/${id}`, { method: 'DELETE' });
@@ -732,16 +1066,39 @@
     }
 
     // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    initFilterPanel('filterUsersBtn', 'filterUsersPanel');
+    initFilterPanel('filterStatusesBtn', 'filterStatusesPanel');
+
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
             const tabId = tab.getAttribute('data-tab');
+            if (tabId === 'users' && currentUserRole !== 'ADMIN') {
+                showNotification('Доступ запрещен', 'error');
+                return;
+            }
             switchToTab(tabId);
         });
     });
 
-    fetchCurrentUser().then(() => {
-        switchToTab('users');
+    document.querySelectorAll('.submenu-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tabId = item.getAttribute('data-tab');
+            if (tabId === 'users' && currentUserRole !== 'ADMIN') {
+                showNotification('Доступ запрещен', 'error');
+                return;
+            }
+            switchToTab(tabId);
+            const parentMenu = item.closest('.has-submenu');
+            if (parentMenu) {
+                parentMenu.classList.remove('open');
+                const submenu = parentMenu.querySelector('.submenu');
+                if (submenu) submenu.classList.remove('show');
+            }
+        });
     });
+
+    fetchCurrentUser();
 </script>
 </body>
 </html>
