@@ -2,14 +2,47 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Дашборд - Диспетчеризация</title>
+    <title>Главная - Диспетчеризация</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --text-primary: #1a1f36;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --card-bg: #ffffff;
+            --sidebar-bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --header-bg: #ffffff;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --input-bg: #ffffff;
+            --hover-bg: #f9fafb;
+            --primary-color: #2a5298;
+        }
+
+        body.dark-theme {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --text-primary: #eeeeee;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --card-bg: #0f3460;
+            --sidebar-bg: #0f3460;
+            --header-bg: #16213e;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3);
+            --input-bg: #1e2a4a;
+            --hover-bg: #1a2744;
+            --primary-color: #3b82f6;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', sans-serif;
-            background: #f0f2f5;
-            color: #1a1f36;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
         }
         .sidebar {
             position: fixed;
@@ -17,15 +50,17 @@
             top: 0;
             width: 260px;
             height: 100%;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: var(--sidebar-bg);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
             overflow-y: auto;
+            transition: background 0.3s ease;
         }
         .sidebar-header { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar-header h2 { color: white; font-size: 20px; }
         .sidebar-menu { padding: 20px 0; }
         .menu-item { padding: 12px 24px; cursor: pointer; transition: all 0.3s; }
         .menu-item:hover { background: rgba(255,255,255,0.1); }
-        .menu-title { color: #e2e8f0; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .menu-title { font-weight: 600; color: #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .has-submenu { position: relative; }
         .submenu { margin-top: 8px; margin-left: 20px; display: none; }
         .submenu.show { display: block; }
@@ -39,17 +74,35 @@
 
         .main-content { margin-left: 260px; padding: 24px; }
         .top-bar {
-            background: white;
+            background: var(--header-bg);
             border-radius: 12px;
             padding: 16px 24px;
             margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            transition: background 0.3s ease;
         }
-        .page-title { font-size: 24px; font-weight: 700; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--text-primary); }
         .user-info { display: flex; align-items: center; gap: 16px; }
+        .user-name { font-weight: 600; color: var(--text-secondary); }
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover {
+            background: var(--hover-bg);
+        }
         .logout-btn {
             padding: 8px 16px;
             background: #fee2e2;
@@ -65,22 +118,23 @@
             margin-bottom: 30px;
         }
         .stat-card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
         }
-        .stat-title { font-size: 14px; color: #6b7280; margin-bottom: 8px; }
-        .stat-value { font-size: 32px; font-weight: 700; color: #1e3c72; }
+        .stat-title { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+        .stat-value { font-size: 32px; font-weight: 700; color: var(--text-primary); }
         .content-panel {
-            background: white;
+            background: var(--card-bg);
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow);
+            transition: background 0.3s ease;
         }
         .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        .data-table th { background: #f9fafb; font-weight: 600; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .data-table th { background: var(--hover-bg); font-weight: 600; }
         .status-badge {
             padding: 4px 12px;
             border-radius: 20px;
@@ -88,7 +142,11 @@
             font-weight: 500;
             display: inline-block;
         }
-        .link-button { color: #2a5298; text-decoration: none; font-weight: 500; cursor: pointer; background: none; border: none; }
+        .link-button { color: var(--primary-color); text-decoration: none; font-weight: 500; cursor: pointer; background: none; border: none; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .main-content { margin-left: 0; }
@@ -102,27 +160,33 @@
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
 
+        <!-- Справочники с выпадающим списком -->
         <div class="menu-item has-submenu" id="referencesMenu">
             <div class="menu-title" onclick="toggleSubmenu(this)">
                 Справочники
                 <span class="arrow">▼</span>
             </div>
             <div class="submenu">
-                <div class="submenu-item admin-only" data-tab="users" onclick="window.location.href='/references?tab=users'">Пользователи</div>
-                <div class="submenu-item" data-tab="statuses" onclick="window.location.href='/references?tab=statuses'">Статусы рейсов</div>
+                <div class="submenu-item admin-only" onclick="window.location.href='/references?tab=users'">Пользователи</div>
+                <div class="submenu-item" onclick="window.location.href='/references?tab=statuses'">Статусы рейсов</div>
             </div>
         </div>
 
+        <!-- Настройки — ТОЛЬКО ДЛЯ ADMIN -->
         <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
+
         <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
     </div>
 </div>
 
 <div class="main-content">
     <div class="top-bar">
-        <h1 class="page-title">Дашборд</h1>
+        <h1 class="page-title">Главная</h1>
         <div class="user-info">
             <span class="user-name" id="username">Загрузка...</span>
+            <button class="theme-toggle" id="themeToggle">
+                <span>🌙</span> Тема
+            </button>
             <a href="/logout" class="logout-btn">Выйти</a>
         </div>
     </div>
@@ -152,6 +216,31 @@
         if (submenu) submenu.classList.toggle('show');
         if (event) event.stopPropagation();
     }
+
+    // ========== ТЕМА ==========
+    function initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            const themeBtn = document.getElementById('themeToggle');
+            if (themeBtn) themeBtn.innerHTML = '<span>☀️</span> Тема';
+        }
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-theme');
+        const themeBtn = document.getElementById('themeToggle');
+        if (document.body.classList.contains('dark-theme')) {
+            localStorage.setItem('theme', 'dark');
+            if (themeBtn) themeBtn.innerHTML = '<span>☀️</span> Тема';
+        } else {
+            localStorage.setItem('theme', 'light');
+            if (themeBtn) themeBtn.innerHTML = '<span>🌙</span> Тема';
+        }
+    }
+
+    document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+    initTheme();
 
     async function fetchCurrentUser() {
         try {
