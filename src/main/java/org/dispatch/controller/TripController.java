@@ -6,6 +6,7 @@ import org.dispatch.model.TripHistory;
 import org.dispatch.repository.DispatchStatusRepository;
 import org.dispatch.repository.TripHistoryRepository;
 import org.dispatch.repository.TripRepository;
+import org.dispatch.service.DispatchSyncService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +22,16 @@ public class TripController {
     private final TripRepository tripRepository;
     private final TripHistoryRepository tripHistoryRepository;
     private final DispatchStatusRepository dispatchStatusRepository;
+    private final DispatchSyncService dispatchSyncService;
 
     public TripController(TripRepository tripRepository,
                           TripHistoryRepository tripHistoryRepository,
-                          DispatchStatusRepository dispatchStatusRepository) {
+                          DispatchStatusRepository dispatchStatusRepository,
+                          DispatchSyncService dispatchSyncService) {
         this.tripRepository = tripRepository;
         this.tripHistoryRepository = tripHistoryRepository;
         this.dispatchStatusRepository = dispatchStatusRepository;
+        this.dispatchSyncService = dispatchSyncService;
     }
 
     @GetMapping
@@ -49,6 +53,8 @@ public class TripController {
                     response.put("driverName", trip.getDriverName());
                     response.put("tripDate", trip.getTripDate());
                     response.put("volume", trip.getVolume());
+                    // ✅ ДОБАВЛЯЕМ createdAt В ОТВЕТ
+                    response.put("createdAt", trip.getCreatedAt());
                     response.put("sourceStatus", trip.getSourceStatus());
                     response.put("currentStatus", trip.getCurrentStatus());
                     response.put("syncedBack", trip.getSyncedBack());
@@ -76,8 +82,11 @@ public class TripController {
                         return ResponseEntity.badRequest().body("Статус не найден");
                     }
 
-                    trip.setCurrentStatus(newStatus);
-                    tripRepository.save(trip);
+                    boolean updated = dispatchSyncService.updateTripStatus(id, newStatus);
+
+                    if (!updated) {
+                        return ResponseEntity.status(500).body("Ошибка при обновлении статуса");
+                    }
 
                     String username = SecurityContextHolder.getContext().getAuthentication().getName();
                     TripHistory history = new TripHistory();
@@ -91,6 +100,7 @@ public class TripController {
                     response.put("success", true);
                     response.put("newStatus", newStatus);
                     response.put("syncStatus", trip.getSyncStatus());
+                    response.put("syncedBack", trip.getSyncedBack());
                     return ResponseEntity.ok(response);
                 })
                 .orElse(ResponseEntity.notFound().build());

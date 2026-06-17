@@ -14,18 +14,13 @@ public class Trip {
     private Long requestId;
 
     private String carrierName;
-
     private String vehiclePlate;
-
     private String trailerPlate;
-
     private String vehicleBrand;
-
     private String driverName;
-
     private LocalDate tripDate;
-
     private Double volume;
+    private LocalDateTime createdAt;
 
     @ManyToOne
     @JoinColumn(name = "current_status_id")
@@ -35,20 +30,19 @@ public class Trip {
     private String sourceStatus;
 
     private Boolean syncedBack = false;
-
     private LocalDateTime syncedBackAt;
 
     @Enumerated(EnumType.STRING)
     private SyncStatus syncStatus = SyncStatus.SYNCED;
 
-    private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     @PreUpdate
@@ -56,6 +50,7 @@ public class Trip {
         updatedAt = LocalDateTime.now();
     }
 
+    // ========== GETTERS AND SETTERS ==========
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -83,8 +78,10 @@ public class Trip {
     public Double getVolume() { return volume; }
     public void setVolume(Double volume) { this.volume = volume; }
 
-    public DispatchStatus getCurrentStatus() { return currentStatus; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
+    public DispatchStatus getCurrentStatus() { return currentStatus; }
     public void setCurrentStatus(DispatchStatus currentStatus) {
         this.currentStatus = currentStatus;
         if (currentStatus != null) {
@@ -104,9 +101,6 @@ public class Trip {
 
     public SyncStatus getSyncStatus() { return syncStatus; }
     public void setSyncStatus(SyncStatus syncStatus) { this.syncStatus = syncStatus; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }

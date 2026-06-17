@@ -23,8 +23,9 @@ public class StatusController {
     }
 
     @PostMapping
-    public DispatchStatus createStatus(@RequestBody DispatchStatus status) {
-        return dispatchStatusRepository.save(status);
+    public ResponseEntity<DispatchStatus> createStatus(@RequestBody DispatchStatus status) {
+        DispatchStatus saved = dispatchStatusRepository.save(status);
+        return ResponseEntity.ok(saved);
     }
 
     @PutMapping("/{id}")
@@ -43,5 +44,15 @@ public class StatusController {
         }
         dispatchStatusRepository.deleteById(id);
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Эндпоинт для получения статусов из диспетчеризации
+     * Используется DispatchApiClient из логистики (GET /api/statuses)
+     */
+    @GetMapping("/sync")
+    public ResponseEntity<?> getStatusesForSync() {
+        List<DispatchStatus> statuses = dispatchStatusRepository.findByActiveTrueOrderBySortOrderAsc();
+        return ResponseEntity.ok(statuses);
     }
 }
