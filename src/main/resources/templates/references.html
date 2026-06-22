@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Справочники - Диспетчеризация</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #ffffff;
+            --text-primary: #1a1f36;
+            --text-secondary: #374151;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --card-bg: #ffffff;
+            --sidebar-bg: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --header-bg: #ffffff;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --input-bg: #ffffff;
+            --hover-bg: #f9fafb;
+            --primary-color: #2a5298;
+            --primary-hover: #1e3c72;
+        }
+
+        body.dark-theme {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --text-primary: #eeeeee;
+            --text-secondary: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --card-bg: #0f3460;
+            --sidebar-bg: #0f3460;
+            --header-bg: #16213e;
+            --shadow: 0 1px 3px rgba(0,0,0,0.3);
+            --input-bg: #1e2a4a;
+            --hover-bg: #1a2744;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100%;
+            background: var(--sidebar-bg);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            overflow-y: auto;
+            transition: background 0.3s ease;
+        }
+        .sidebar-header { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header h2 { color: white; font-size: 20px; }
+        .sidebar-menu { padding: 20px 0; }
+        .menu-item { padding: 12px 24px; cursor: pointer; transition: all 0.3s; }
+        .menu-item:hover { background: rgba(255,255,255,0.1); }
+        .menu-title { font-weight: 600; color: #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .has-submenu { position: relative; }
+        .submenu { margin-top: 8px; margin-left: 20px; display: none; }
+        .submenu.show { display: block; }
+        .submenu-item { padding: 8px 12px; color: #cbd5e1; cursor: pointer; border-radius: 8px; transition: all 0.2s; font-size: 14px; }
+        .submenu-item:hover { background: rgba(255,255,255,0.1); color: white; }
+        .arrow { font-size: 12px; transition: transform 0.2s; }
+        .has-submenu.open .arrow { transform: rotate(180deg); }
+        .admin-only { display: none !important; }
+        body[data-role="ADMIN"] .admin-only { display: block !important; }
+        body[data-role="ADMIN"] .admin-only-flex { display: flex !important; }
+        body[data-role="DISPATCHER"] .admin-only { display: none !important; }
+
+        .main-content { margin-left: 260px; padding: 24px; }
+        .top-bar {
+            background: var(--header-bg);
+            border-radius: 12px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            transition: background 0.3s ease;
+        }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .logout-btn { padding: 8px 16px; background: #fee2e2; color: #dc2626; border-radius: 8px; text-decoration: none; font-size: 14px; }
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        .theme-toggle:hover { background: var(--hover-bg); }
+        .content-panel {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: background 0.3s ease;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text-secondary);
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+        }
+        .tab-content {
+            display: none;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: background 0.3s ease;
+        }
+        .tab-content.active { display: block; }
+
+        .filter-panel {
+            display: none;
+            background: var(--hover-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .filter-panel.show {
+            display: block;
+        }
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .filter-field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .filter-field input, .filter-field select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+        .filter-field input:focus, .filter-field select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .filter-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .btn-filter {
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .btn-filter:hover { background: var(--bg-primary); }
+        .btn-filter.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .btn-clear {
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .btn-apply {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .data-table th {
+            background: var(--hover-bg);
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+        }
+        .btn-secondary {
+            background: var(--hover-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background: var(--bg-primary);
+        }
+        .btn-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .btn-danger:hover {
+            background: #fecaca;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text-secondary); }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main-content { margin-left: 0; }
+            .filter-row { grid-template-columns: 1fr; }
+            .tabs { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+<div class="sidebar">
+    <div class="sidebar-header"><h2>Диспетчеризация</h2></div>
+    <div class="sidebar-menu">
+        <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
+        <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
+
+        <div class="menu-item has-submenu" id="referencesMenu">
+            <div class="menu-title" onclick="toggleSubmenu(this)">
+                Справочники
+                <span class="arrow">▼</span>
+            </div>
+            <div class="submenu">
+                <div class="submenu-item admin-only" data-tab="users">Пользователи</div>
+                <div class="submenu-item" data-tab="statuses">Статусы рейсов</div>
+            </div>
+        </div>
+
+        <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
+
+        <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="top-bar">
+        <h1 class="page-title">Справочники</h1>
+        <div class="user-info">
+            <span class="user-name" id="currentUsername">Загрузка...</span>
+            <button class="theme-toggle" id="themeToggle"><span>🌙</span> Тема</button>
+            <a href="/logout" class="logout-btn">Выйти</a>
+        </div>
+    </div>
+
+    <div class="content-panel">
+        <div class="tabs" id="tabsContainer">
+            <div class="tab" data-tab="users" id="usersTab">Пользователи</div>
+            <div class="tab" data-tab="statuses" id="statusesTab">Статусы рейсов</div>
+        </div>
+
+        <!-- Пользователи -->
+        <div id="users" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <button class="btn-filter" id="filterUsersBtn"><span>🔍</span> Фильтр</button>
+                <button class="btn-primary" id="addUserBtn" onclick="openUserModal()">+ Добавить пользователя</button>
+            </div>
+
+            <div id="filterUsersPanel" class="filter-panel">
+                <div class="filter-row">
+                    <div class="filter-field">
+                        <label>Логин</label>
+                        <input type="text" id="filterUserUsername" placeholder="Логин">
+                    </div>
+                    <div class="filter-field">
+                        <label>ФИО</label>
+                        <input type="text" id="filterUserFullName" placeholder="ФИО">
+                    </div>
+                    <div class="filter-field">
+                        <label>Роль</label>
+                        <select id="filterUserRole">
+                            <option value="">Все</option>
+                            <option value="ADMIN">Администратор</option>
+                            <option value="DISPATCHER">Диспетчер</option>
+                        </select>
+                    </div>
+                    <div class="filter-field">
+                        <label>Статус</label>
+                        <select id="filterUserActive">
+                            <option value="">Все</option>
+                            <option value="true">Активен</option>
+                            <option value="false">Неактивен</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearUserFilters()">Сбросить</button>
+                    <button class="btn-apply" onclick="applyUserFilters()">Применить</button>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Логин</th>
+                    <th>ФИО</th>
+                    <th>Роль</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody id="users-tbody">
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Статусы рейсов -->
+        <div id="statuses" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <button class="btn-filter" id="filterStatusesBtn"><span>🔍</span> Фильтр</button>
+                <button class="btn-primary" id="addStatusBtn" onclick="openStatusModal()">+ Добавить статус</button>
+            </div>
+
+            <div id="filterStatusesPanel" class="filter-panel">
+                <div class="filter-row">
+                    <div class="filter-field">
+                        <label>Код</label>
+                        <input type="text" id="filterStatusCode" placeholder="Код статуса">
+                    </div>
+                    <div class="filter-field">
+                        <label>Название</label>
+                        <input type="text" id="filterStatusName" placeholder="Название статуса">
+                    </div>
+                    <div class="filter-field">
+                        <label>Цвет</label>
+                        <input type="text" id="filterStatusColor" placeholder="Цвет (HEX)">
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn-clear" onclick="clearStatusFilters()">Сбросить</button>
+                    <button class="btn-apply" onclick="applyStatusFilters()">Применить</button>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Код</th>
+                    <th>Название</th>
+                    <th>Цвет</th>
+                    <th>Порядок</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody id="statuses-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для пользователя -->
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <h3 id="userModalTitle">Добавление пользователя</h3>
+        <input type="hidden" id="userId">
+        <div class="form-group">
+            <label>Логин *</label>
+            <input type="text" id="userUsername" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>Пароль <span id="passwordRequired">*</span></label>
+            <input type="password" id="userPassword" class="form-control">
+            <small id="passwordHint" style="color:var(--text-muted);"></small>
+        </div>
+        <div class="form-group">
+            <label>ФИО</label>
+            <input type="text" id="userFullName" class="form-control">
+        </div>
+        <div class="form-group">
+            <label>Роль *</label>
+            <select id="userRole" class="form-control">
+                <option value="ADMIN">Администратор</option>
+                <option value="DISPATCHER">Диспетчер</option>
+            </select>
+        </div>
+        <div class="form-group" id="userActiveField" style="display: none;">
+            <label>Статус</label>
+            <select id="userActive" class="form-control">
+                <option value="true">Активен</option>
+                <option value="false">Неактивен</option>
+            </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+            <button class="btn-secondary" onclick="closeUserModal()">Отмена</button>
+            <button class="btn-primary" onclick="saveUser()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для статуса -->
+<div id="statusModal" class="modal">
+    <div class="modal-content">
+        <h3 id="statusModalTitle">Добавление статуса</h3>
+        <input type="hidden" id="statusId">
+        <div class="form-group">
+            <label>Код *</label>
+            <input type="text" id="statusCode" class="form-control" placeholder="IN_TRANSIT">
+        </div>
+        <div class="form-group">
+            <label>Название *</label>
+            <input type="text" id="statusName" class="form-control" placeholder="В пути">
+        </div>
+        <div class="form-group">
+            <label>Цвет (HEX)</label>
+            <input type="color" id="statusColor" class="form-control" value="#3b82f6">
+        </div>
+        <div class="form-group">
+            <label>Порядок сортировки</label>
+            <input type="number" id="statusOrder" class="form-control" value="0">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+            <button class="btn-secondary" onclick="closeStatusModal()">Отмена</button>
+            <button class="btn-primary" onclick="saveStatus()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== ТЕМА ==========
+    function initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            const themeBtn = document.getElementById('themeToggle');
+            if (themeBtn) themeBtn.innerHTML = '<span>☀️</span> Тема';
+        }
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-theme');
+        const themeBtn = document.getElementById('themeToggle');
+        if (document.body.classList.contains('dark-theme')) {
+            localStorage.setItem('theme', 'dark');
+            if (themeBtn) themeBtn.innerHTML = '<span>☀️</span> Тема';
+        } else {
+            localStorage.setItem('theme', 'light');
+            if (themeBtn) themeBtn.innerHTML = '<span>🌙</span> Тема';
+        }
+    }
+
+    document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+    initTheme();
+
+    function toggleSubmenu(element) {
+        const menuItem = element.closest('.has-submenu');
+        menuItem.classList.toggle('open');
+        const submenu = menuItem.querySelector('.submenu');
+        if (submenu) submenu.classList.toggle('show');
+        if (event) event.stopPropagation();
+    }
+
+    // ========== ЗАГРУЗКА ВКЛАДКИ ==========
+    let currentUserRole = '';
+    let allUsers = [];
+    let allStatuses = [];
+    let editingUserId = null;
+    let editingStatusId = null;
+
+    let filterPanels = {};
+
+    function initFilterPanel(btnId, panelId) {
+        const btn = document.getElementById(btnId);
+        const panel = document.getElementById(panelId);
+        if (btn && panel) {
+            let isVisible = false;
+            btn.addEventListener('click', () => {
+                isVisible = !isVisible;
+                if (isVisible) { panel.classList.add('show'); btn.classList.add('active'); }
+                else { panel.classList.remove('show'); btn.classList.remove('active'); }
+            });
+            filterPanels[panelId] = panel;
+        }
+    }
+
+    function saveActiveTab(tabId) {
+        localStorage.setItem('dispatch_active_tab', tabId);
+    }
+
+    function getTabFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if (tab && (tab === 'users' || tab === 'statuses')) {
+            return tab;
+        }
+        return null;
+    }
+
+    function loadActiveTab() {
+        const urlTab = getTabFromUrl();
+        if (urlTab) {
+            return urlTab;
+        }
+        const savedTab = localStorage.getItem('dispatch_active_tab');
+        if (savedTab && (savedTab === 'users' || savedTab === 'statuses')) {
+            return savedTab;
+        }
+        return 'statuses';
+    }
+
+    async function fetchCurrentUser() {
+        try {
+            const response = await fetch('/api/auth/current-user');
+            if (response.ok) {
+                const user = await response.json();
+                currentUserRole = user.role;
+                document.getElementById('currentUsername').innerText = user.username || user.fullName || 'User';
+                document.body.setAttribute('data-role', currentUserRole);
+
+                // ========== СКРЫВАЕМ ВКЛАДКУ ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ДИСПЕТЧЕРА ==========
+                const usersTab = document.getElementById('usersTab');
+                const usersSubmenuItem = document.querySelector('.submenu-item[data-tab="users"]');
+                const addUserBtn = document.getElementById('addUserBtn');
+                const addStatusBtn = document.getElementById('addStatusBtn');
+
+                if (currentUserRole === 'DISPATCHER') {
+                    if (usersTab) usersTab.style.display = 'none';
+                    if (usersSubmenuItem) usersSubmenuItem.style.display = 'none';
+                    if (addUserBtn) addUserBtn.style.display = 'none';
+                    if (addStatusBtn) addStatusBtn.style.display = 'none';
+                } else {
+                    if (usersTab) usersTab.style.display = '';
+                    if (usersSubmenuItem) usersSubmenuItem.style.display = '';
+                    if (addUserBtn) addUserBtn.style.display = '';
+                    if (addStatusBtn) addStatusBtn.style.display = '';
+                }
+                // ===================================================================
+
+                const activeTab = loadActiveTab();
+                switchToTab(activeTab);
+            }
+        } catch(e) {
+            document.getElementById('currentUsername').innerText = 'User';
+            switchToTab('statuses');
+        }
+    }
+
+    function switchToTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        const targetTab = document.getElementById(tabId);
+        if (targetTab) targetTab.classList.add('active');
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+            if (tab.getAttribute('data-tab') === tabId) tab.classList.add('active');
+        });
+
+        document.querySelectorAll('.submenu-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-tab') === tabId) {
+                item.classList.add('active');
+            }
+        });
+
+        saveActiveTab(tabId);
+
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabId);
+        window.history.replaceState({}, '', url);
+
+        if (tabId === 'users') loadUsers();
+        if (tabId === 'statuses') loadStatuses();
+    }
+
+    // ========== ПОЛЬЗОВАТЕЛИ ==========
+    async function loadUsers() {
+        const tbody = document.getElementById('users-tbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="loading">Загрузка...</span></span>';
+
+        try {
+            const response = await fetch('/api/users');
+            if (!response.ok) throw new Error('Ошибка загрузки');
+            allUsers = await response.json();
+            allUsers.sort((a, b) => a.id - b.id);
+            renderUsers();
+        } catch(e) {
+            console.error(e);
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Ошибка загрузки</span></span>';
+        }
+    }
+
+    function renderUsers() {
+        const tbody = document.getElementById('users-tbody');
+        if (!tbody) return;
+
+        if (!allUsers || allUsers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Нет пользователей</span></span>';
+            return;
+        }
+
+        const filterUsername = document.getElementById('filterUserUsername')?.value.toLowerCase() || '';
+        const filterFullName = document.getElementById('filterUserFullName')?.value.toLowerCase() || '';
+        const filterRole = document.getElementById('filterUserRole')?.value || '';
+        const filterActive = document.getElementById('filterUserActive')?.value || '';
+
+        let filtered = [...allUsers];
+
+        if (filterUsername) {
+            filtered = filtered.filter(u => (u.username || '').toLowerCase().includes(filterUsername));
+        }
+        if (filterFullName) {
+            filtered = filtered.filter(u => (u.fullName || '').toLowerCase().includes(filterFullName));
+        }
+        if (filterRole && filterRole !== '') {
+            filtered = filtered.filter(u => u.role === filterRole);
+        }
+        if (filterActive && filterActive !== '') {
+            filtered = filtered.filter(u => u.active == (filterActive === 'true'));
+        }
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Нет пользователей по фильтру</span></span>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(user => `
+            <tr>
+                <td>${user.id}</span></span>
+                <td>${escapeHtml(user.username)}</span></span>
+                <td>${escapeHtml(user.fullName || '-')}</span></span>
+                <td>${user.role === 'ADMIN' ? 'Администратор' : 'Диспетчер'}</span></span>
+                <td>${user.active ? '🟢 Активен' : '🔴 Неактивен'}</span></span>
+                <td>
+                    <button class="btn-secondary" onclick="editUser(${user.id})">✏️</button>
+                    <button class="btn-danger" onclick="deleteUser(${user.id})">🗑️</button>
+                 </span>
+            </tr>
+        `).join('');
+    }
+
+    function clearUserFilters() {
+        document.getElementById('filterUserUsername').value = '';
+        document.getElementById('filterUserFullName').value = '';
+        document.getElementById('filterUserRole').value = '';
+        document.getElementById('filterUserActive').value = '';
+        renderUsers();
+    }
+
+    function applyUserFilters() {
+        renderUsers();
+    }
+
+    function openUserModal() {
+        editingUserId = null;
+        document.getElementById('userModalTitle').innerText = 'Добавление пользователя';
+        document.getElementById('userId').value = '';
+        document.getElementById('userUsername').value = '';
+        document.getElementById('userUsername').disabled = false;
+        document.getElementById('userPassword').value = '';
+        document.getElementById('userPassword').disabled = false;
+        document.getElementById('passwordRequired').innerText = '*';
+        document.getElementById('passwordHint').innerText = '';
+        document.getElementById('userFullName').value = '';
+        document.getElementById('userRole').value = 'DISPATCHER';
+        document.getElementById('userActiveField').style.display = 'none';
+        document.getElementById('userModal').style.display = 'flex';
+    }
+
+    function editUser(id) {
+        const user = allUsers.find(u => u.id === id);
+        if (user) {
+            editingUserId = user.id;
+            document.getElementById('userModalTitle').innerText = 'Редактирование пользователя';
+            document.getElementById('userId').value = user.id;
+            document.getElementById('userUsername').value = user.username;
+            document.getElementById('userUsername').disabled = true;
+            document.getElementById('userPassword').value = '';
+            document.getElementById('userPassword').disabled = false;
+            document.getElementById('passwordRequired').innerText = '';
+            document.getElementById('passwordHint').innerText = 'Оставьте пустым, чтобы не менять пароль';
+            document.getElementById('userFullName').value = user.fullName || '';
+            document.getElementById('userRole').value = user.role;
+            document.getElementById('userActive').value = user.active ? 'true' : 'false';
+            document.getElementById('userActiveField').style.display = 'block';
+            document.getElementById('userModal').style.display = 'flex';
+        }
+    }
+
+    function closeUserModal() {
+        document.getElementById('userModal').style.display = 'none';
+        editingUserId = null;
+    }
+
+    async function saveUser() {
+        const username = document.getElementById('userUsername').value.trim();
+        const password = document.getElementById('userPassword').value;
+        const fullName = document.getElementById('userFullName').value;
+        const role = document.getElementById('userRole').value;
+
+        if (!username) {
+            showNotification('Введите логин', 'error');
+            return;
+        }
+
+        const isNewUser = (editingUserId === null);
+        if (isNewUser && !password) {
+            showNotification('Введите пароль', 'error');
+            return;
+        }
+
+        const data = { username, fullName, role };
+        if (password && password.trim() !== '') data.password = password;
+        if (!isNewUser) {
+            data.active = document.getElementById('userActive').value === 'true';
+        }
+
+        try {
+            let response;
+            if (!isNewUser) {
+                response = await fetch(`/api/users/${editingUserId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            }
+
+            if (response.ok) {
+                showNotification(isNewUser ? 'Пользователь создан' : 'Пользователь обновлен', 'success');
+                closeUserModal();
+                await loadUsers();
+            } else {
+                const error = await response.json();
+                showNotification(error.error || 'Ошибка при сохранении', 'error');
+            }
+        } catch(e) {
+            showNotification('Ошибка: ' + e.message, 'error');
+        }
+    }
+
+    async function deleteUser(id) {
+        if (confirm('Удалить пользователя?')) {
+            try {
+                const response = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showNotification('Пользователь удален', 'success');
+                    await loadUsers();
+                } else {
+                    showNotification('Ошибка при удалении', 'error');
+                }
+            } catch(e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+    }
+
+    // ========== СТАТУСЫ ==========
+    async function loadStatuses() {
+        try {
+            const response = await fetch('/api/statuses');
+            allStatuses = await response.json();
+            renderStatuses();
+        } catch(e) {
+            document.getElementById('statuses-tbody').innerHTML = '<tr><td colspan="6" class="empty-state">Ошибка загрузки</span></span>';
+        }
+    }
+
+    function renderStatuses() {
+        const tbody = document.getElementById('statuses-tbody');
+        if (!tbody) return;
+
+        if (!allStatuses || allStatuses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Нет статусов</span></span>';
+            return;
+        }
+
+        const filterCode = document.getElementById('filterStatusCode')?.value.toLowerCase() || '';
+        const filterName = document.getElementById('filterStatusName')?.value.toLowerCase() || '';
+        const filterColor = document.getElementById('filterStatusColor')?.value.toLowerCase() || '';
+
+        let filtered = [...allStatuses];
+
+        if (filterCode) {
+            filtered = filtered.filter(s => (s.name || '').toLowerCase().includes(filterCode));
+        }
+        if (filterName) {
+            filtered = filtered.filter(s => (s.description || '').toLowerCase().includes(filterName));
+        }
+        if (filterColor) {
+            filtered = filtered.filter(s => (s.color || '').toLowerCase().includes(filterColor));
+        }
+
+        const isAdmin = currentUserRole === 'ADMIN';
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Нет статусов по фильтру</span></span>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(s => `
+            <tr>
+                <td>${s.id}</span></span>
+                <td><code>${escapeHtml(s.name)}</code></span></span>
+                <td><strong>${escapeHtml(s.description || s.name)}</strong></span></span>
+                <td><div style="width:20px;height:20px;background:${s.color};border-radius:4px;"></div></span>
+                <td>${s.sortOrder || 0}</span></span>
+                <td>
+                    ${isAdmin ? `
+                        <button class="btn-secondary" onclick="editStatus(${s.id})">✏️</button>
+                        <button class="btn-danger" onclick="deleteStatus(${s.id})">🗑️</button>
+                    ` : ''}
+                 </span>
+            </tr>
+        `).join('');
+    }
+
+    function clearStatusFilters() {
+        document.getElementById('filterStatusCode').value = '';
+        document.getElementById('filterStatusName').value = '';
+        document.getElementById('filterStatusColor').value = '';
+        renderStatuses();
+    }
+
+    function applyStatusFilters() {
+        renderStatuses();
+    }
+
+    function openStatusModal() {
+        if (currentUserRole !== 'ADMIN') {
+            showNotification('Доступ запрещен', 'error');
+            return;
+        }
+        editingStatusId = null;
+        document.getElementById('statusModalTitle').innerText = 'Добавление статуса';
+        document.getElementById('statusId').value = '';
+        document.getElementById('statusCode').value = '';
+        document.getElementById('statusName').value = '';
+        document.getElementById('statusColor').value = '#3b82f6';
+        document.getElementById('statusOrder').value = '0';
+        document.getElementById('statusModal').style.display = 'flex';
+    }
+
+    function editStatus(id) {
+        if (currentUserRole !== 'ADMIN') {
+            showNotification('Доступ запрещен', 'error');
+            return;
+        }
+        const status = allStatuses.find(s => s.id === id);
+        if (status) {
+            editingStatusId = status.id;
+            document.getElementById('statusModalTitle').innerText = 'Редактирование статуса';
+            document.getElementById('statusId').value = status.id;
+            document.getElementById('statusCode').value = status.name;
+            document.getElementById('statusName').value = status.description || '';
+            document.getElementById('statusColor').value = status.color || '#3b82f6';
+            document.getElementById('statusOrder').value = status.sortOrder || 0;
+            document.getElementById('statusModal').style.display = 'flex';
+        }
+    }
+
+    function closeStatusModal() {
+        document.getElementById('statusModal').style.display = 'none';
+        editingStatusId = null;
+    }
+
+    async function saveStatus() {
+        if (currentUserRole !== 'ADMIN') return;
+        const code = document.getElementById('statusCode').value.trim().toUpperCase();
+        const name = document.getElementById('statusName').value.trim();
+        const color = document.getElementById('statusColor').value;
+        const sortOrder = parseInt(document.getElementById('statusOrder').value);
+
+        if (!code) {
+            showNotification('Введите код статуса', 'error');
+            return;
+        }
+        if (!name) {
+            showNotification('Введите название статуса', 'error');
+            return;
+        }
+
+        const data = { name: code, description: name, color, sortOrder, active: true };
+
+        try {
+            let response;
+            if (editingStatusId) {
+                response = await fetch(`/api/statuses/${editingStatusId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            } else {
+                response = await fetch('/api/statuses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            }
+
+            if (response.ok) {
+                showNotification(editingStatusId ? 'Статус обновлен' : 'Статус создан', 'success');
+                closeStatusModal();
+                await loadStatuses();
+            } else {
+                showNotification('Ошибка при сохранении', 'error');
+            }
+        } catch(e) {
+            showNotification('Ошибка: ' + e.message, 'error');
+        }
+    }
+
+    async function deleteStatus(id) {
+        if (currentUserRole !== 'ADMIN') return;
+        if (confirm('Удалить статус?')) {
+            try {
+                const response = await fetch(`/api/statuses/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showNotification('Статус удален', 'success');
+                    await loadStatuses();
+                } else {
+                    showNotification('Ошибка при удалении', 'error');
+                }
+            } catch(e) {
+                showNotification('Ошибка: ' + e.message, 'error');
+            }
+        }
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+            color: white;
+            border-radius: 10px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    // ========== ИНИЦИАЛИЗАЦИЯ ==========
+    initFilterPanel('filterUsersBtn', 'filterUsersPanel');
+    initFilterPanel('filterStatusesBtn', 'filterStatusesPanel');
+
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabId = tab.getAttribute('data-tab');
+            if (tabId === 'users' && currentUserRole !== 'ADMIN') {
+                showNotification('Доступ запрещен', 'error');
+                return;
+            }
+            switchToTab(tabId);
+        });
+    });
+
+    document.querySelectorAll('.submenu-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tabId = item.getAttribute('data-tab');
+            if (tabId === 'users' && currentUserRole !== 'ADMIN') {
+                showNotification('Доступ запрещен', 'error');
+                return;
+            }
+            switchToTab(tabId);
+            const parentMenu = item.closest('.has-submenu');
+            if (parentMenu) {
+                parentMenu.classList.remove('open');
+                const submenu = parentMenu.querySelector('.submenu');
+                if (submenu) submenu.classList.remove('show');
+            }
+        });
+    });
+
+    fetchCurrentUser();
+</script>
+</body>
+</html>
