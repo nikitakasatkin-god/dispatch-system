@@ -9,4 +9,5 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
     List<Trip> findBySyncedBackFalse();
     List<Trip> findBySourceStatus(String sourceStatus);
     List<Trip> findBySyncStatus(SyncStatus syncStatus);
+    List<Trip> findAllByOrderByIdDesc();
 }

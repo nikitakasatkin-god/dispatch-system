@@ -160,7 +160,6 @@
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
 
-        <!-- Справочники с выпадающим списком -->
         <div class="menu-item has-submenu" id="referencesMenu">
             <div class="menu-title" onclick="toggleSubmenu(this)">
                 Справочники
@@ -172,7 +171,6 @@
             </div>
         </div>
 
-        <!-- Настройки — ТОЛЬКО ДЛЯ ADMIN -->
         <div class="menu-item admin-only" onclick="window.location.href='/settings'"><div class="menu-title">Настройки</div></div>
 
         <div class="menu-item" onclick="window.location.href='/profile'"><div class="menu-title">Профиль</div></div>
@@ -258,26 +256,45 @@
             const response = await fetch('/api/trips');
             const trips = await response.json();
 
-            document.getElementById('totalTrips').innerText = trips.length;
-            document.getElementById('activeTrips').innerText = trips.filter(t => t.currentStatus?.name !== 'COMPLETED' && t.currentStatus?.name !== 'CANCELLED').length;
-            document.getElementById('completedTrips').innerText = trips.filter(t => t.currentStatus?.name === 'COMPLETED').length;
+            // ========== СТАТИСТИКА ==========
+            const total = trips.length;
+            const active = trips.filter(t =>
+                t.currentStatus?.name !== 'COMPLETED' &&
+                t.currentStatus?.name !== 'CANCELLED'
+            ).length;
+            const completed = trips.filter(t =>
+                t.currentStatus?.name === 'COMPLETED'
+            ).length;
+
+            document.getElementById('totalTrips').innerText = total;
+            document.getElementById('activeTrips').innerText = active;
+            document.getElementById('completedTrips').innerText = completed;
+
+            // ========== ПОСЛЕДНИЕ 10 РЕЙСОВ (НОВЫЕ СВЕРХУ) ==========
+            const sorted = [...trips]
+                .sort((a, b) => b.id - a.id)
+                .slice(0, 10);
 
             const tbody = document.getElementById('recentTrips');
-            if (trips.length) {
-                tbody.innerHTML = trips.slice(0, 10).map(t => `
+            if (sorted.length) {
+                tbody.innerHTML = sorted.map(t => `
                     <tr>
                         <td>${t.id}</td>
                         <td>Заявка №${t.requestId}</td>
                         <td>${t.carrierName || '-'}</td>
                         <td>${t.driverName || '-'}</td>
-                        <td><span class="status-badge" style="background:${t.currentStatus?.color || '#e5e7eb'}; color:white;">${t.currentStatus?.name || t.sourceStatus}</span></td>
+                        <td><span class="status-badge" style="background:${t.currentStatus?.color || '#e5e7eb'}; color:white;">
+                            ${t.currentStatus?.description || t.currentStatus?.name || t.sourceStatus}
+                        </span></td>
                         <td><button class="link-button" onclick="location.href='/trip-detail?id=${t.id}'">Открыть</button></td>
                     </tr>
                 `).join('');
             } else {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Нет рейсов</span></span>';
             }
-        } catch(e) { console.error(e); }
+        } catch(e) {
+            console.error('Ошибка загрузки дашборда:', e);
+        }
     }
 
     fetchCurrentUser().then(() => loadDashboard());
