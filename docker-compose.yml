@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres-dispatch:
+    image: postgres:15
+    container_name: dispatch_postgres
+    environment:
+      POSTGRES_DB: dispatch_db
+      POSTGRES_USER: dispatch_user
+      POSTGRES_PASSWORD: dispatch_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - dispatch_data:/var/lib/postgresql/data
+    networks:
+      - dispatch-network
+    restart: unless-stopped
+
+  dispatch-system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dispatch-system
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      DISPATCH_DB_PASSWORD: dispatch_pass
+      LOGISTICS_SYSTEM_PASSWORD: admin123
+    depends_on:
+      - postgres-dispatch
+    networks:
+      - dispatch-network
+    restart: unless-stopped
+
+networks:
+  dispatch-network:
+    driver: bridge
+
+volumes:
+  dispatch_data:
