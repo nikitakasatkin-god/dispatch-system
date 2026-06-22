@@ -448,7 +448,7 @@
             allStatuses = await response.json();
             const statusSelect = document.getElementById('filterStatus');
             statusSelect.innerHTML = '<option value="ALL">Все</option>' +
-                allStatuses.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                allStatuses.map(s => `<option value="${s.id}">${s.description || s.name}</option>`).join('');
         } catch(e) {
             console.error('Ошибка загрузки статусов:', e);
         }
@@ -551,12 +551,12 @@
         return dateString;
     }
 
-    function getStatusColor(status) {
-        return status?.color || '#6b7280';
+    function getStatusName(status) {
+        return status?.description || status?.name || status?.status || 'Не указан';
     }
 
-    function getStatusName(status) {
-        return status?.name || status?.status || 'Не указан';
+    function getStatusColor(status) {
+        return status?.color || '#6b7280';
     }
 
     function getSyncStatusText(syncStatus) {

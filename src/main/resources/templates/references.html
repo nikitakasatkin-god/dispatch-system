@@ -343,7 +343,6 @@
         <div class="menu-item" onclick="window.location.href='/dashboard'"><div class="menu-title">Главная</div></div>
         <div class="menu-item" onclick="window.location.href='/trips'"><div class="menu-title">Рейсы</div></div>
 
-        <!-- Справочники с выпадающим списком -->
         <div class="menu-item has-submenu" id="referencesMenu">
             <div class="menu-title" onclick="toggleSubmenu(this)">
                 Справочники
@@ -443,12 +442,12 @@
             <div id="filterStatusesPanel" class="filter-panel">
                 <div class="filter-row">
                     <div class="filter-field">
-                        <label>Название</label>
-                        <input type="text" id="filterStatusName" placeholder="Название статуса">
+                        <label>Код</label>
+                        <input type="text" id="filterStatusCode" placeholder="Код статуса">
                     </div>
                     <div class="filter-field">
-                        <label>Описание</label>
-                        <input type="text" id="filterStatusDescription" placeholder="Описание">
+                        <label>Название</label>
+                        <input type="text" id="filterStatusName" placeholder="Название статуса">
                     </div>
                     <div class="filter-field">
                         <label>Цвет</label>
@@ -465,8 +464,8 @@
                 <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Код</th>
                     <th>Название</th>
-                    <th>Описание</th>
                     <th>Цвет</th>
                     <th>Порядок</th>
                     <th>Действия</th>
@@ -523,12 +522,12 @@
         <h3 id="statusModalTitle">Добавление статуса</h3>
         <input type="hidden" id="statusId">
         <div class="form-group">
-            <label>Название *</label>
-            <input type="text" id="statusName" class="form-control" placeholder="IN_TRANSIT">
+            <label>Код *</label>
+            <input type="text" id="statusCode" class="form-control" placeholder="IN_TRANSIT">
         </div>
         <div class="form-group">
-            <label>Описание</label>
-            <input type="text" id="statusDescription" class="form-control" placeholder="В пути">
+            <label>Название *</label>
+            <input type="text" id="statusName" class="form-control" placeholder="В пути">
         </div>
         <div class="form-group">
             <label>Цвет (HEX)</label>
@@ -897,17 +896,17 @@
             return;
         }
 
+        const filterCode = document.getElementById('filterStatusCode')?.value.toLowerCase() || '';
         const filterName = document.getElementById('filterStatusName')?.value.toLowerCase() || '';
-        const filterDescription = document.getElementById('filterStatusDescription')?.value.toLowerCase() || '';
         const filterColor = document.getElementById('filterStatusColor')?.value.toLowerCase() || '';
 
         let filtered = [...allStatuses];
 
-        if (filterName) {
-            filtered = filtered.filter(s => (s.name || '').toLowerCase().includes(filterName));
+        if (filterCode) {
+            filtered = filtered.filter(s => (s.name || '').toLowerCase().includes(filterCode));
         }
-        if (filterDescription) {
-            filtered = filtered.filter(s => (s.description || '').toLowerCase().includes(filterDescription));
+        if (filterName) {
+            filtered = filtered.filter(s => (s.description || '').toLowerCase().includes(filterName));
         }
         if (filterColor) {
             filtered = filtered.filter(s => (s.color || '').toLowerCase().includes(filterColor));
@@ -923,8 +922,8 @@
         tbody.innerHTML = filtered.map(s => `
             <tr>
                 <td>${s.id}</span></span>
-                <td><strong>${escapeHtml(s.name)}</strong></span></span>
-                <td>${escapeHtml(s.description || '-')}</span></span>
+                <td><code>${escapeHtml(s.name)}</code></span></span>
+                <td><strong>${escapeHtml(s.description || s.name)}</strong></span></span>
                 <td><div style="width:20px;height:20px;background:${s.color};border-radius:4px;"></div></span>
                 <td>${s.sortOrder || 0}</span></span>
                 <td>
@@ -938,8 +937,8 @@
     }
 
     function clearStatusFilters() {
+        document.getElementById('filterStatusCode').value = '';
         document.getElementById('filterStatusName').value = '';
-        document.getElementById('filterStatusDescription').value = '';
         document.getElementById('filterStatusColor').value = '';
         renderStatuses();
     }
@@ -956,8 +955,8 @@
         editingStatusId = null;
         document.getElementById('statusModalTitle').innerText = 'Добавление статуса';
         document.getElementById('statusId').value = '';
+        document.getElementById('statusCode').value = '';
         document.getElementById('statusName').value = '';
-        document.getElementById('statusDescription').value = '';
         document.getElementById('statusColor').value = '#3b82f6';
         document.getElementById('statusOrder').value = '0';
         document.getElementById('statusModal').style.display = 'flex';
@@ -973,8 +972,8 @@
             editingStatusId = status.id;
             document.getElementById('statusModalTitle').innerText = 'Редактирование статуса';
             document.getElementById('statusId').value = status.id;
-            document.getElementById('statusName').value = status.name;
-            document.getElementById('statusDescription').value = status.description || '';
+            document.getElementById('statusCode').value = status.name;
+            document.getElementById('statusName').value = status.description || '';
             document.getElementById('statusColor').value = status.color || '#3b82f6';
             document.getElementById('statusOrder').value = status.sortOrder || 0;
             document.getElementById('statusModal').style.display = 'flex';
@@ -988,17 +987,21 @@
 
     async function saveStatus() {
         if (currentUserRole !== 'ADMIN') return;
+        const code = document.getElementById('statusCode').value.trim().toUpperCase();
         const name = document.getElementById('statusName').value.trim();
-        const description = document.getElementById('statusDescription').value;
         const color = document.getElementById('statusColor').value;
         const sortOrder = parseInt(document.getElementById('statusOrder').value);
 
+        if (!code) {
+            showNotification('Введите код статуса', 'error');
+            return;
+        }
         if (!name) {
             showNotification('Введите название статуса', 'error');
             return;
         }
 
-        const data = { name, description, color, sortOrder, active: true };
+        const data = { name: code, description: name, color, sortOrder, active: true };
 
         try {
             let response;

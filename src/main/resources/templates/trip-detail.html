@@ -367,9 +367,14 @@
         return syncStatus === 'PENDING' ? 'Ожидает отправки' : 'Синхронизирован';
     }
 
+    function getStatusDisplay(status) {
+        return status?.description || status?.name || 'Не указан';
+    }
+
     function renderTripInfo() {
         const container = document.getElementById('tripInfo');
         const currentStatus = tripData.currentStatus;
+        const statusName = getStatusDisplay(currentStatus);
         const statusColor = currentStatus?.color || '#6b7280';
         const syncStatusText = getSyncStatusText(tripData.syncStatus);
         const syncStatusClass = tripData.syncStatus === 'PENDING' ? 'sync-pending' : 'sync-completed';
@@ -377,7 +382,7 @@
         container.innerHTML = `
             <div class="detail-header">
                 <div><span class="detail-label">Рейс №</span><span class="detail-value">${tripData.id}</span></div>
-                <div><span class="status-badge" style="background: ${statusColor}; color: white;">${currentStatus?.name || tripData.sourceStatus}</span></div>
+                <div><span class="status-badge" style="background: ${statusColor}; color: white;">${statusName}</span></div>
             </div>
             <div class="detail-grid">
                 <div class="detail-item"><div class="detail-label">Заявка</div><div class="detail-value">Заявка №${tripData.requestId}</div></div>
@@ -399,7 +404,7 @@
                         <option value="">Выберите статус</option>
                         ${allStatuses.map(s => `
                             <option value="${s.id}" ${currentStatus?.id === s.id ? 'selected' : ''} style="background: ${s.color}; color: white; padding: 8px;">
-                                ${s.name} - ${s.description || ''}
+                                ${s.description || s.name} - ${s.name}
                             </option>
                         `).join('')}
                     </select>
@@ -441,7 +446,7 @@
                     ${history.map(h => `
                         <tr>
                             <td>${formatDateTime(h.changedAt)}</span></span>
-                            <td><span class="status-badge" style="background: ${h.status?.color || '#6b7280'}; color: white;">${h.status?.name || '-'}</span></span>
+                            <td><span class="status-badge" style="background: ${h.status?.color || '#6b7280'}; color: white;">${h.status?.description || h.status?.name || '-'}</span></span>
                             <td>${h.userName || h.changedBy || '-'}</span></span>
                         </tr>
                     `).join('')}
